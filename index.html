@@ -55,6 +55,12 @@
   .pop-meta { color:var(--muted); }
   .pop-cta { color:var(--link); font-weight:600; }
   .pop-views { color:#111; font-weight:600; font-variant-numeric:tabular-nums; font-size:12px; }
+  .legend { margin:14px 0 2px; }
+  .legend-label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; }
+  .legend-bar { height:11px; border-radius:2px; border:1px solid var(--rule);
+    background:linear-gradient(to right,#30123b,#4675ed,#1bcfd4,#61fc6c,#d1e935,#fe9b2d,#e14016,#7a0403); }
+  .legend-ticks { display:flex; justify-content:space-between; font-size:10px; color:var(--muted);
+    font-variant-numeric:tabular-nums; margin-top:3px; }
   .hover-pop .maplibregl-popup-content { pointer-events:none; padding:8px 10px; }
   .maplibregl-popup-tip { border-top-color:#fff; border-bottom-color:#fff; }
   #loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -99,6 +105,12 @@
   </div>
 
   <div class="ctrl stat"><b id="total">–</b> geotagged articles · dot size = views last month</div>
+
+  <div class="legend">
+    <div class="legend-label">Pageviews last month (June 2026)</div>
+    <div class="legend-bar"></div>
+    <div class="legend-ticks"><span>1</span><span>100</span><span>10k</span><span>1M+</span></div>
+  </div>
 
   <div class="foot">
     Vector tiles (PMTiles) streamed by viewport — only the tiles you look at are
