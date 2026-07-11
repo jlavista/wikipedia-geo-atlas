@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wikipedia Geotag Atlas</title>
+<link href="vendor/maplibre-gl.css" rel="stylesheet" />
+<script src="vendor/maplibre-gl.js"></script>
+<script src="vendor/pmtiles.js"></script>
+<style>
+  :root {
+    --panel:#ffffff; --ink:#1a1a1a; --muted:#6b6b64; --rule:#e4e0d6;
+    --yellow:#ffcc00; --link:#b4390e; --paper:#f4f1ea;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  #map { position:absolute; inset:0; }
+  #panel {
+    position:absolute; top:16px; left:16px; width:322px; max-height:calc(100% - 32px);
+    overflow:auto; background:rgba(255,255,255,0.95); border:1px solid var(--rule);
+    border-top:4px solid var(--yellow); border-radius:3px; padding:16px 18px;
+    box-shadow:0 2px 18px rgba(0,0,0,0.12); backdrop-filter:blur(4px); z-index:2;
+  }
+  .kicker { display:inline-block; font-variant:small-caps; letter-spacing:.16em;
+    background:var(--yellow); color:#1a1a1a; font-size:11px; font-weight:700;
+    padding:2px 7px; }
+  h1 { font-family:Georgia,'Times New Roman',serif; font-size:23px; line-height:1.14;
+    margin:8px 0 6px; font-weight:600; color:#111; }
+  .sub { color:var(--muted); font-size:12.5px; line-height:1.45; margin-bottom:14px; }
+  .ctrl { margin:14px 0; }
+  label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted); margin-bottom:6px; }
+  select, input[type=range] { width:100%; }
+  select { background:#fff; color:var(--ink); border:1px solid #cfcabd;
+    border-radius:4px; padding:7px 8px; font-size:13px; }
+  .seg { display:flex; gap:6px; }
+  .seg button { flex:1; background:#fff; color:var(--ink); border:1px solid #cfcabd;
+    border-radius:4px; padding:7px 4px; font-size:12px; cursor:pointer; }
+  .seg button.active { background:var(--yellow); color:#111; border-color:#e0b400; font-weight:700; }
+  .yearrow { display:flex; align-items:center; gap:8px; }
+  .yearrow input { flex:1; accent-color:var(--link); }
+  .yearval { font-variant-numeric:tabular-nums; font-size:12px; color:var(--muted); min-width:74px; text-align:right; }
+  .stat { font-variant-numeric:tabular-nums; font-size:13px; }
+  .stat b { font-size:18px; color:#111; }
+  .foot { margin-top:16px; padding-top:12px; border-top:1px solid var(--rule);
+    color:var(--muted); font-size:11px; line-height:1.5; }
+  .foot a { color:var(--link); text-decoration:none; }
+  .maplibregl-popup-content { background:#fff; color:var(--ink); border:1px solid var(--rule);
+    border-top:3px solid var(--yellow); border-radius:2px; font-size:12.5px;
+    box-shadow:0 2px 14px rgba(0,0,0,0.16); }
+  .maplibregl-popup-content a { color:var(--link); text-decoration:none; font-weight:600; font-size:13.5px; }
+  .maplibregl-popup-content a:hover { text-decoration:underline; }
+  .pop-title { font-family:Georgia,serif; font-weight:600; font-size:14px; color:#111; }
+  .pop-meta { color:var(--muted); }
+  .pop-cta { color:var(--link); font-weight:600; }
+  .hover-pop .maplibregl-popup-content { pointer-events:none; padding:8px 10px; }
+  .maplibregl-popup-tip { border-top-color:#fff; border-bottom-color:#fff; }
+  #loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:var(--paper); z-index:5; color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="loading">Loading geotag sample…</div>
+
+<div id="panel">
+  <div class="kicker">Wikipedia Geographic Atlas</div>
+  <h1>The geotagged world, one point at a time</h1>
+  <div class="sub" id="subtitle">Every geotagged article on English Wikipedia — about 1.46 million places.
+    Filter by coordinate source and creation year, then zoom in and click any point
+    to open its Wikipedia article.</div>
+
+  <div class="ctrl">
+    <label for="lang">Language edition</label>
+    <select id="lang"><option value="-1">All languages</option></select>
+  </div>
+
+  <div class="ctrl">
+    <label>Coordinate source</label>
+    <div class="seg" id="src">
+      <button data-src="-1" class="active">All</button>
+      <button data-src="0">Wikitext</button>
+      <button data-src="1">Wikidata</button>
+    </div>
+  </div>
+
+  <div class="ctrl">
+    <label>Creation year range</label>
+    <div class="yearrow">
+      <input type="range" id="ymin" />
+      <span class="yearval" id="yminv"></span>
+    </div>
+    <div class="yearrow">
+      <input type="range" id="ymax" />
+      <span class="yearval" id="ymaxv"></span>
+    </div>
+  </div>
+
+  <div class="ctrl stat"><b id="total">–</b> geotagged points · filters apply live on the map</div>
+
+  <div class="foot">
+    Vector tiles (PMTiles) streamed by viewport — only the tiles you look at are
+    downloaded. The full build renders all 21.3M points (see README).<br>
+    Basemap © <a href="https://carto.com/attributions">CARTO</a> ·
+    Data © Wikipedia / Wikidata contributors
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
