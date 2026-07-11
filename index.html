@@ -54,6 +54,7 @@
   .pop-title { font-family:Georgia,serif; font-weight:600; font-size:14px; color:#111; }
   .pop-meta { color:var(--muted); }
   .pop-cta { color:var(--link); font-weight:600; }
+  .pop-views { color:#111; font-weight:600; font-variant-numeric:tabular-nums; font-size:12px; }
   .hover-pop .maplibregl-popup-content { pointer-events:none; padding:8px 10px; }
   .maplibregl-popup-tip { border-top-color:#fff; border-bottom-color:#fff; }
   #loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -67,9 +68,9 @@
 <div id="panel">
   <div class="kicker">Wikipedia Geographic Atlas</div>
   <h1>The geotagged world, one point at a time</h1>
-  <div class="sub" id="subtitle">Every geotagged article on English Wikipedia — about 1.46 million places.
-    Filter by coordinate source and creation year, then zoom in and click any point
-    to open its Wikipedia article.</div>
+  <div class="sub" id="subtitle">Every geotagged article on English Wikipedia — about 1.46 million places,
+    <b>sized and shaded by how many people read them last month</b> (June 2026).
+    Zoom in and click any point to open its article.</div>
 
   <div class="ctrl">
     <label for="lang">Language edition</label>
@@ -97,11 +98,12 @@
     </div>
   </div>
 
-  <div class="ctrl stat"><b id="total">–</b> geotagged points · filters apply live on the map</div>
+  <div class="ctrl stat"><b id="total">–</b> geotagged articles · dot size = views last month</div>
 
   <div class="foot">
     Vector tiles (PMTiles) streamed by viewport — only the tiles you look at are
-    downloaded. The full build renders all 21.3M points (see README).<br>
+    downloaded. Point size and shade encode human pageviews for June 2026
+    (Wikimedia dumps).<br>
     Basemap © <a href="https://carto.com/attributions">CARTO</a> ·
     Data © Wikipedia / Wikidata contributors
   </div>

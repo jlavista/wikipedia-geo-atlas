@@ -138,7 +138,8 @@ async function init() {
     "source-layer": SOURCE_LAYER,
     maxzoom: 5,
     paint: {
-      "heatmap-weight": 0.6,
+      "heatmap-weight": ["interpolate", ["linear"], ["log10", ["+", 1, ["get", "v"]]],
+        0, 0.15, 3, 0.5, 6, 1.0],
       "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 0.6, 5, 1.8],
       "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 2, 5, 16],
       "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 3.5, 0.85, 5, 0.35],
@@ -162,9 +163,14 @@ async function init() {
     "source-layer": SOURCE_LAYER,
     minzoom: 3,
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 2.6, 6, 4, 10, 6, 14, 9, 16, 12],
-      "circle-color": "#c0341d",
-      "circle-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.7, 8, 0.92],
+      // Radius scales with popularity (log of last-month views) and grows with zoom.
+      "circle-radius": ["interpolate", ["linear"], ["zoom"],
+        4, ["interpolate", ["linear"], ["log10", ["+", 1, ["get", "v"]]], 0, 1.4, 3, 2.6, 5, 4.5, 7, 7],
+        12, ["interpolate", ["linear"], ["log10", ["+", 1, ["get", "v"]]], 0, 2.5, 3, 5, 5, 9, 7, 15]],
+      // Color deepens with popularity.
+      "circle-color": ["interpolate", ["linear"], ["log10", ["+", 1, ["get", "v"]]],
+        0, "#eaa787", 2, "#dd6a3f", 4, "#c0341d", 6, "#8f1e0a", 7, "#6b1408"],
+      "circle-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.75, 8, 0.95],
       "circle-stroke-color": "#ffffff",
       "circle-stroke-opacity": 0.9,
       "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 3, 0.5, 10, 1.4],
@@ -220,8 +226,10 @@ async function init() {
     map.getCanvas().style.cursor = "pointer";
     const p = e.features[0].properties;
     map.setFilter("pts-hl", ["all", currentFilter(), ["==", ["get", "wp"], p.wp || "\u0000"]]);
+    const v = +p.v || 0;
+    const viewsLine = `<br><span class="pop-views">${v.toLocaleString()} views · Jun 2026</span>`;
     hover.setLngLat(e.lngLat).setHTML(
-      `<span class="pop-title">${esc(articleTitle(p))}</span><br>` +
+      `<span class="pop-title">${esc(articleTitle(p))}</span>${viewsLine}<br>` +
       `<span class="pop-meta">${esc(p.lang)}${p.year > 0 ? " · " + p.year : ""} · ` +
       `<span class="pop-cta">click to open ↗</span></span>`
     ).addTo(map);
