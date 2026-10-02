@@ -14,7 +14,7 @@ web/
   serve_range.py      local static server WITH HTTP Range support (for preview)
   vendor/
     maplibre-gl.js/.css   MapLibre GL JS (vendored — no CDN dependency)
-    pmtiles.js            PMTiles protocol for MapLibre (vendored)
+    pmtiles.js            PMTiles protocol for MapLibre (vendored, v4.5.0)
   tiles/
     world.pmtiles         the vector-tile archive (built by ../build_pmtiles_py.py)
     world.stats.json      sidecar: total count, year range, per-language counts
