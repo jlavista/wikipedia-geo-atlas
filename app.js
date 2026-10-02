@@ -6,6 +6,8 @@
 const TILES_URL = "tiles/world.pmtiles";       // 100k representative demo (rebuild with --sample to change size)
 const STATS_URL = "tiles/world.stats.json";
 const SOURCE_LAYER = "geotags";
+// Free, keyless vector basemap (CARTO's basemaps now require an API key).
+const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
 const state = { lang: "", src: -1, ymin: 2001, ymax: 2026 };
 
@@ -16,25 +18,7 @@ maplibregl.addProtocol("pmtiles", protocol.tile);
 const map = new maplibregl.Map({
   container: "map",
   attributionControl: { compact: true },
-  style: {
-    version: 8,
-    sources: {
-      carto: {
-        type: "raster",
-        tiles: [
-          "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-          "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-          "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-        ],
-        tileSize: 256,
-        attribution: "© CARTO © OpenStreetMap contributors",
-      },
-    },
-    layers: [
-      { id: "bg", type: "background", paint: { "background-color": "#f4f1ea" } },
-      { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 0.85 } },
-    ],
-  },
+  style: BASEMAP_STYLE,
   center: [12, 28],
   zoom: 1.6,
   maxZoom: 18,
@@ -63,13 +47,19 @@ function applyFilter() {
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// Tiles carry either full `url` + `title` or just the compact article path `wp`.
+const ARTICLE_KEY = ["coalesce", ["get", "url"], ["get", "wp"]];
+const NO_MATCH = ["==", ARTICLE_KEY, "\u0000"];
+
 function articleUrl(p) {
+  if (p.url) return p.url;
   return p.wp ? `https://${p.lang}.wikipedia.org/wiki/${p.wp}` : null;
 }
 
 function articleTitle(p) {
-  let t = p.wp || p.lang;
-  try { t = decodeURIComponent(p.wp); } catch (_) {}
+  if (p.title) return p.title;
+  let t = p.wp || p.lang || "";
+  try { t = decodeURIComponent(t); } catch (_) {}
   return t.replace(/_/g, " ");
 }
 
@@ -192,7 +182,7 @@ async function init() {
     source: "pts",
     "source-layer": SOURCE_LAYER,
     minzoom: 3,
-    filter: ["==", ["get", "wp"], "\u0000"],
+    filter: NO_MATCH,
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 6, 10, 11, 16, 16],
       "circle-color": "#ffcc00",
@@ -233,7 +223,7 @@ async function init() {
   map.on("mousemove", "pts-hit", (e) => {
     map.getCanvas().style.cursor = "pointer";
     const p = e.features[0].properties;
-    map.setFilter("pts-hl", ["all", currentFilter(), ["==", ["get", "wp"], p.wp || "\u0000"]]);
+    map.setFilter("pts-hl", ["all", currentFilter(), ["==", ARTICLE_KEY, p.url || p.wp || "\u0000"]]);
     const v = +p.v || 0;
     const viewsLine = `<br><span class="pop-views">${v.toLocaleString()} views · Jun 2026</span>`;
     hover.setLngLat(e.lngLat).setHTML(
@@ -244,7 +234,7 @@ async function init() {
   });
   map.on("mouseleave", "pts-hit", () => {
     map.getCanvas().style.cursor = "";
-    map.setFilter("pts-hl", ["==", ["get", "wp"], "\u0000"]);
+    map.setFilter("pts-hl", NO_MATCH);
     hover.remove();
   });
 

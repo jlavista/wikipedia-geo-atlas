@@ -20,8 +20,10 @@ web/
     world.stats.json      sidecar: total count, year range, per-language counts
 ```
 
-The only remaining external dependency at runtime is the CARTO dark basemap raster
-tiles (swap the `carto` source in `app.js` for a self-hosted basemap to remove it).
+The only remaining external dependency at runtime is the basemap: the free, keyless
+[OpenFreeMap](https://openfreemap.org) Positron vector style (`BASEMAP_STYLE` in
+`app.js`). CARTO basemaps were used originally but now require an API key (keyless
+requests return "API KEY REQUIRED" tiles).
 
 ## Preview locally
 
