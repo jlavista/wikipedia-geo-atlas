@@ -74,8 +74,8 @@
 <div id="panel">
   <div class="kicker">Wikipedia Geographic Atlas</div>
   <h1>The geotagged world, one point at a time</h1>
-  <div class="sub" id="subtitle">Every geotagged article on English Wikipedia — about 1.46 million places,
-    <b>sized and shaded by how many people read them last month</b> (June 2026).
+  <div class="sub" id="subtitle">1.41 million places from English Wikipedia (96% of its
+    1.46 million geotagged articles), <b>sized and shaded by how many people read them last month</b> (June 2026).
     Zoom in and click any point to open its article.</div>
 
   <div class="ctrl">
@@ -115,11 +115,15 @@
   <div class="foot">
     Vector tiles (PMTiles) streamed by viewport — only the tiles you look at are
     downloaded. Point size and shade encode human pageviews for June 2026
-    (Wikimedia dumps).<br>
+    (Wikimedia dumps). Where points are densest, only the most-read articles fit,
+    so 57,802 rarely read articles are not drawn.<br>
     Basemap © <a href="https://openfreemap.org">OpenFreeMap</a>,
     <a href="https://www.openmaptiles.org/">OpenMapTiles</a>,
     <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ·
     Data © Wikipedia / Wikidata contributors
+    (<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>) ·
+    <a href="https://huggingface.co/datasets/jlavista/wikipedia-geo-atlas">Dataset</a> ·
+    <a href="https://github.com/jlavista/wikipedia-geo-atlas">Source</a>
   </div>
 </div>
 

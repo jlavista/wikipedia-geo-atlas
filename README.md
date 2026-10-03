@@ -1,105 +1,84 @@
-# Wikipedia Geotag Atlas — web visualizer
+# Wikipedia Geotag Atlas
 
-A client-side, static-hostable map of geotagged Wikipedia articles. All rendering
-and filtering run in the browser (MapLibre GL JS) reading a single **PMTiles**
-vector-tile archive over HTTP range requests — so the browser only downloads the
-tiles for the current viewport. No server, build step, or API key required.
+**Live map: https://jlavista.github.io/wikipedia-geo-atlas/**
 
-## What's here
+An interactive map of geotagged **English Wikipedia** articles. Each dot is an
+article, sized and coloured by how many people read it in June 2026; click a dot to
+open the article. It is a static site — no server, build step, or API key — hosted on
+GitHub Pages.
+
+- **Coverage:** English Wikipedia has 1,463,869 geotagged articles in the source data,
+  and **1,406,067 (96%) are on the map.** Where points are densest, each tile keeps only
+  its 4,000 most-read articles at the deepest zoom level (8), so 57,802 rarely read
+  articles are not drawn.
+- **Filters:** coordinate source (article wikitext or Wikidata) and creation year.
+- **Data:** the full dataset — 21.3 million geotagged articles from 355 language
+  editions, with June 2026 pageviews — is on Hugging Face:
+  [jlavista/wikipedia-geo-atlas](https://huggingface.co/datasets/jlavista/wikipedia-geo-atlas).
+- **Background:** built for a study of the Global North/South imbalance in Wikipedia
+  geotags (manuscript in preparation).
+
+## How it works
+
+[MapLibre GL JS](https://maplibre.org) draws the map in the browser. The points come
+from a single [PMTiles](https://github.com/protomaps/PMTiles) vector-tile archive
+(`tiles/world.pmtiles`, 90 MB) read with HTTP range requests, so the browser downloads
+only the tiles in view.
+
+- **Basemap:** the free, keyless [OpenFreeMap](https://openfreemap.org) Positron style
+  (`BASEMAP_STYLE` in `app.js`). CARTO basemaps were used originally, but they now
+  require an API key.
+- **Layers:** a heatmap up to zoom 5; from zoom 3, individual dots coloured with the
+  Turbo palette by log pageviews and sized by pageviews.
+- **Tile properties:** `lang`, `src` (0 = wikitext, 1 = Wikidata), `year` (creation
+  year), `wp` (article path; the link is `https://{lang}.wikipedia.org/wiki/{wp}`) and
+  `v` (June 2026 human pageviews). `app.js` also accepts `url` + `title` instead of `wp`.
 
 ```
-web/
-  index.html          UI shell (editorial dark theme)
-  app.js              MapLibre map, heatmap + point layers, filters, pmtiles:// source
-  serve_range.py      local static server WITH HTTP Range support (for preview)
-  vendor/
-    maplibre-gl.js/.css   MapLibre GL JS (vendored — no CDN dependency)
-    pmtiles.js            PMTiles protocol for MapLibre (vendored, v4.5.0)
-  tiles/
-    world.pmtiles         the vector-tile archive (built by ../build_pmtiles_py.py)
-    world.stats.json      sidecar: total count, year range, per-language counts
+index.html               page, controls and legend
+app.js                   map, layers, filters, popups
+serve_range.py           local preview server with HTTP Range support
+tiles/world.pmtiles      vector tiles, zoom 0–8
+tiles/world.stats.json   totals and year range shown in the panel
+vendor/                  MapLibre GL JS 4.7.1 and pmtiles.js 4.5.0 (no CDN dependency)
 ```
-
-The only remaining external dependency at runtime is the basemap: the free, keyless
-[OpenFreeMap](https://openfreemap.org) Positron vector style (`BASEMAP_STYLE` in
-`app.js`). CARTO basemaps were used originally but now require an API key (keyless
-requests return "API KEY REQUIRED" tiles).
 
 ## Preview locally
 
-PMTiles needs HTTP **range requests**. Python's `http.server` does **not** support
-them, so use the bundled range-capable server:
+PMTiles needs HTTP range requests, which Python's built-in `http.server` doesn't
+support. Use the bundled server:
 
 ```powershell
-cd web
 python serve_range.py 8000
 ```
 
-Open http://localhost:8000  (do not open index.html via file:// — `fetch` and range
-requests need http). GitHub Pages supports range requests natively, so no special
-server is needed in production.
+Then open http://localhost:8000 (not `file://`). GitHub Pages supports range requests,
+so production needs nothing special.
 
-Filters: language edition, coordinate source (wikitext / Wikidata), and creation-year
-range. Low zoom shows an inferno-style density heatmap; zoom past level 4 shows
-individual points; click a point for its language, source, and year.
+## How the tiles were built
 
-## Build / resize the tiles
-
-Tiles are built in **pure Python** (no tippecanoe / Node / Docker) by
-`../build_pmtiles_py.py`, which streams `results/geo_all_languages_clean.jsonl`,
-bins points into web-mercator tiles per zoom with a per-tile cap (level-of-detail),
-and packs a single `.pmtiles` plus a `.stats.json` sidecar.
+The tiles were built from the cleaned corpus behind the Hugging Face dataset with
+`build_pmtiles_py.py` from the companion analysis code (pure Python, no tippecanoe;
+not yet public):
 
 ```powershell
-cd ..
-# 100k representative demo (reservoir-sampled across the whole corpus):
-python build_pmtiles_py.py --sample 100000 --maxzoom 8 --cap 4000 --out web\tiles\world.pmtiles
-
-# full corpus (all 21.3M records):
-python build_pmtiles_py.py --maxzoom 8 --cap 4000 --out web\tiles\world.pmtiles
-
-# quick English-only smoke test (first N lines, no full scan):
-python build_pmtiles_py.py --limit 300000 --maxzoom 6 --out web\tiles\world.pmtiles
+python build_pmtiles_py.py --only en --views results\pageviews_202606.tsv --maxzoom 8 --cap 4000 --out web\tiles\world.pmtiles
 ```
 
-Key flags:
+- `--only en`: English Wikipedia only.
+- `--views`: June 2026 pageviews per article; when a tile is full, the most-read
+  articles are kept.
+- `--maxzoom 8 --cap 4000`: deepest zoom level and maximum points per tile.
 
-- `--sample N` — uniform reservoir sample of N points across the whole file (one
-  streaming pass; representative of all languages/regions). Omit to use every point.
-- `--maxzoom` — deepest zoom level tiled. Higher = more points visible when zoomed
-  in, larger file. `8` is a good world-overview default.
-- `--cap` — max points kept per tile (level-of-detail). Low-zoom tiles hold a
-  representative subsample; detail fills in as tiles subdivide.
+GitHub Pages rejects files over 100 MB. Storing each article's path (`wp`) keeps the
+archive at about 90 MB; storing the full URL and title instead makes it about 139 MB.
 
-The client reads `tiles/world.pmtiles` + `tiles/world.stats.json` by default (see the
-`TILES_URL` / `STATS_URL` constants at the top of `app.js`).
+## License
 
-## Sizing / hosting on GitHub Pages
+Code and data in this repository are released under [CC BY-SA 4.0](LICENSE), except
+the third-party libraries in `vendor/`, which keep their own BSD-3-Clause licenses
+(`vendor/LICENSE-maplibre.txt`, `vendor/LICENSE-pmtiles.txt`).
 
-| build | file size | fits Pages (<100 MB/file)? |
-|-------|-----------|-----------------------------|
-| `--sample 100000 --maxzoom 8` | ~6 MB | yes |
-| `--sample 1000000 --maxzoom 8` | ~84 MB | yes (tight) |
-| full corpus `--maxzoom 8` | exceeds 100 MB | needs Release/R2 |
-
-> Each point carries its exact article URL path (`wp` property) so popups link to
-> the real Wikipedia article. Those strings dominate the file size — roughly 3× vs
-> geometry-only — so the point budget for a single Pages-hosted file is ~1.1M.
-
-Deploy:
-
-1. Commit the `web/` folder (including `tiles/world.pmtiles`).
-2. Repo **Settings → Pages**, point at the `web/` folder on your default branch (or a
-   `gh-pages` branch containing the contents of `web/`).
-3. If a higher-zoom full build exceeds the 100 MB per-file limit, host
-   `world.pmtiles` as a **GitHub Release asset** (2 GB, supports range requests) or on
-   **Cloudflare R2** (set CORS to allow your Pages origin), and change `TILES_URL` in
-   `app.js` to that absolute URL (`pmtiles://https://YOUR_HOST/world.pmtiles`).
-
-## Notes
-
-- `world.stats.json` drives the language dropdown, totals, and year sliders because a
-  capped tileset is a sample — the browser can't count the true totals itself.
-- To go bigger than the 100k demo, just re-run `build_pmtiles_py.py` with a larger
-  `--sample` (or no `--sample` for the full corpus) and, if needed, a higher
-  `--maxzoom`; the client needs no changes.
+Article titles, links and coordinates come from Wikipedia (© Wikipedia contributors,
+CC BY-SA 4.0) and Wikidata (CC0); pageviews come from Wikimedia's public pageview
+statistics. Basemap © OpenFreeMap, OpenMapTiles and OpenStreetMap contributors.
